@@ -2,6 +2,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,6 +22,7 @@ public class Main {
 
     private static class Bank {
         Map<Integer, Integer> accounts;
+        private final Lock lock = new ReentrantLock();
         ExecutorService clerks;
 
         public Bank(Map<Integer, Integer> accounts) {
@@ -28,8 +31,13 @@ public class Main {
         }
 
         private void innerProcessTransaction(Transaction transaction) {
-            accounts.put(transaction.fromId, accounts.get(transaction.fromId) - transaction.amount);
-            accounts.put(transaction.toId, accounts.get(transaction.toId) + transaction.amount);
+            lock.lock();
+            try {
+                accounts.put(transaction.fromId, accounts.get(transaction.fromId) - transaction.amount);
+                accounts.put(transaction.toId, accounts.get(transaction.toId) + transaction.amount);
+            } finally {
+                lock.unlock();
+            }
         }
 
         public void processTransaction(Transaction transaction) {
